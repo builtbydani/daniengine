@@ -57,6 +57,61 @@ impl Canvas for PixelsCanvas {
         }
     }
 
+    fn draw_line(&mut self, x1: i32, y1: i32, x2: i32, y2: i32, color: Color) {
+        // Bresenham
+        let (mut x, mut y) = (x1, y1);
+        let dx = (x2 - x1).abs();
+        let sx = if x1 < x2 { 1 } else { -1 };
+        let dy = -(y2 - y1).abs();
+        let sy = if y1 < y2 { 1 } else { -1 };
+        let mut err = dx + dy;
+
+        loop {
+            self.fill_rect(x, y, 1, 1, color);
+            if x == x2 && y == y2 { break; }
+            let e2 = 2 * err;
+            if e2 >= dy { err += dy; x += sx; }
+            if e2 <= dx { err += dx; y += sy; }
+        }
+    }
+
+    fn draw_circle(&mut self, cx: i32, cy: i32, radius: i32, color: Color) {
+        // Midpoint circle (outline)
+        if radius <= 0 { return; }
+        let mut x = 0;
+        let mut y = radius;
+        let mut d = 1 - radius;
+
+        // helper to plot 8-way symmetry
+        let mut plot = |px: i32, py: i32| { self.fill_rect(px, py, 1, 1, color); };
+
+        // initial cardinal points
+        plot(cx, cy + radius);
+        plot(cx, cy - radius);
+        plot(cx + radius, cy);
+        plot(cx - radius, cy);
+
+        while x < y {
+            if d < 0 {
+                d += 2 * x + 3;
+            } else {
+                d += 2 * (x - y) + 5;
+                y -= 1;
+            }
+            x += 1;
+
+            // 8 octants
+            plot(cx + x, cy + y);
+            plot(cx - x, cy + y);
+            plot(cx + x, cy - y);
+            plot(cx - x, cy - y);
+            plot(cx + y, cy + x);
+            plot(cx - y, cy + x);
+            plot(cx + y, cy - x);
+            plot(cx - y, cy - x);
+        }
+    }
+
     fn present(&mut self) -> Result<(), String> {
         self.pixels.render().map_err(|e| e.to_string())
     }

@@ -3,6 +3,7 @@ pub mod physics;
 pub mod render;
 pub mod input;
 pub mod scene;
+pub mod particles;
 
 // use daniengine::prelude::*;
 pub mod prelude {
