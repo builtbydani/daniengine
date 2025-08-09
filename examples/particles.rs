@@ -44,7 +44,8 @@ fn main() -> anyhow::Result<()> {
         life_max: 1.2,
         size_min: 2.0,
         size_max: 4.0,
-        color: Color(255, 160, 240, 255),                  // pink 💖
+        start_color: Color(255, 160, 240, 255),
+        end_color: Color(0, 0, 255, 255),
     };
 
     event_loop.run(move |event, _, control_flow| {

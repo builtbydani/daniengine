@@ -12,7 +12,8 @@ pub struct EmitterConfig {
     pub life_max: f32,
     pub size_min: f32,
     pub size_max: f32,
-    pub color: Color,
+    pub start_color: Color,
+    pub end_color: Color,
 }
 
 #[derive(Clone, Copy)]
@@ -22,7 +23,8 @@ struct Particle {
     life: f32,
     life_total: f32,
     size: f32,
-    color: Color,
+    start_color: Color,
+    end_color: Color,
     alive: bool,
 }
 
@@ -42,7 +44,8 @@ impl ParticleSystem {
                     life: 0.0,
                     life_total: 0.0,
                     size: 0.0,
-                    color: Color(255, 255, 255, 255),
+                    start_color: Color(255, 255, 255, 255),
+                    end_color: Color(0, 0, 255, 255),
                     alive: false,
                 })
                 .collect(),
@@ -70,7 +73,8 @@ impl ParticleSystem {
                     life,
                     life_total: life,
                     size,
-                    color: config.color,
+                    start_color: config.start_color,
+                    end_color: config.end_color,
                     alive: true,
                 };
             } else {
@@ -99,12 +103,15 @@ impl ParticleSystem {
         for p in &self.particles {
             if !p.alive { continue; }
             let t = (p.life / p.life_total).clamp(0.0, 1.0);
+            let Color(sr, sg, sb, sa) = p.start_color;
+            let Color(er, eg, eb, ea) = p.end_color;
 
-            // Fade alpha by remaining life
-            let a = (t * 255.0) as u8;
-            let Color(r, g, b, _) = p.color;
-            let c = Color(r, g, b, a);
+            let r = sr as f32 + (er as f32 - sr as f32) * (1.0 - t);
+            let g = sg as f32 + (eg as f32 - sg as f32) * (1.0 - t);
+            let b = sb as f32 + (eb as f32 - sb as f32) * (1.0 - t);
+            let a = sa as f32 + (ea as f32 - sa as f32) * (1.0 - t);
 
+            let c = Color(r as u8, g as u8, b as u8, a as u8);
             canvas.fill_rect_f32(p.pos[0], p.pos[1], p.size, p.size, c);
         }
     }
