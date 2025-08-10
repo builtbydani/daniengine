@@ -116,6 +116,30 @@ impl ParticleSystem {
         }
     }
 
+    pub fn draw_additive<C: Canvas>(&self, canvas: &mut C) {
+        for p in &self.particles {
+            if !p.alive { continue; }
+            let t = (p.life / p.life_total).clamp(0.0, 1.0);
+
+            let Color(sr, sg, sb, sa) = p.start_color;
+            let Color(er, eg, eb, ea) = p.end_color;
+            
+            let r = sr as f32 + (er as f32 - sr as f32) * (1.0 - t);
+            let g = sg as f32 + (eg as f32 - sg as f32) * (1.0 - t);
+            let b = sb as f32 + (eb as f32 - sb as f32) * (1.0 - t);
+            let a = sa as f32 + (ea as f32 - sa as f32) * (1.0 - t);
+
+            let boost = 1.5;
+            let cr = (r * boost).min(255.0);
+            let cg = (g * boost).min(255.0);
+            let cb = (b * boost).min(255.0);
+
+            let c = Color(cr as u8, cg as u8, cb as u8, a as u8);
+            canvas.fill_rect_f32(p.pos[0], p.pos[1], p.size, p.size, c);
+
+        }
+    }
+
     // --- internals ---
 
     fn alloc_slot_index(&mut self) -> Option<usize> {

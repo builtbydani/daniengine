@@ -48,6 +48,8 @@ fn main() -> anyhow::Result<()> {
         end_color: Color(0, 0, 255, 255),
     };
 
+    let mut additive = false;
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
 
@@ -106,6 +108,12 @@ fn main() -> anyhow::Result<()> {
                         VirtualKeyCode::Escape => *control_flow = ControlFlow::Exit,
                         VirtualKeyCode::F => fountain = pressed,
                         VirtualKeyCode::R => ps = ParticleSystem::new(10_000),
+                        VirtualKeyCode::A => {
+                            if pressed {
+                                additive = !additive;
+                                println!("Additive mode: {}", additive);
+                            }
+                        }
                         _ => {}
                     }
                 }
@@ -141,7 +149,11 @@ fn main() -> anyhow::Result<()> {
                 ps.update(dt);
 
                 canvas.clear(Color(12, 12, 16, 255));
-                ps.draw(&mut canvas);
+                if additive {
+                    ps.draw_additive(&mut canvas);
+                } else {
+                    ps.draw(&mut canvas);
+                }
                 // tiny mouse dot
                 canvas.fill_rect_f32(mouse_pos.x - 2.0, mouse_pos.y - 2.0, 4.0, 4.0, Color(255, 255, 255, 160));
 
