@@ -3,6 +3,7 @@ use std::time::Instant;
 use daniengine::prelude::*;
 use daniengine::render::canvas::{Canvas, Color, CanvasFloatExt};
 use daniengine::particles::{EmitterConfig, ParticleSystem};
+use daniengine::physics;
 
 #[cfg(feature = "render-pixels")]
 use daniengine::render::pixels_impl::PixelsCanvas;
@@ -82,6 +83,12 @@ fn main() -> anyhow::Result<()> {
     let mut active_cfg = sparkle_cfg;
 
     let mut additive = false;
+
+    let mut body = physics::Body {
+        pos: Vec2::new(40.0, 40.0),
+        vel: Vec2::new(60.0, 45.0),
+        size: Vec2::new(18.0, 18.0),
+    };
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -254,8 +261,23 @@ fn main() -> anyhow::Result<()> {
                         dt);
                 }
 
+                // --- update the bouncing square like in playground ---
+                body.pos = body.pos.add(body.vel.mul(dt));
+
+                let (w_i, h_i) = canvas.size();
+                let (w, h) = (w_i as f32, h_i as f32);
+                let s = body.size.x;
+
+                if body.pos.x <= 0.0 { body.pos.x = 0.0; body.vel.x =  body.vel.x.abs(); }
+                if body.pos.x + s >= w { body.pos.x = w - s; body.vel.x = -body.vel.x.abs(); }
+                if body.pos.y <= 0.0 { body.pos.y = 0.0; body.vel.y =  body.vel.y.abs(); }
+                if body.pos.y + s >= h { body.pos.y = h - s; body.vel.y = -body.vel.y.abs(); }
+
+
                 // update + render
                 ps.update(dt);
+
+                ps.collide_rect([body.pos.x, body.pos.y, body.size.x, body.size.y], 0.6);
 
                 canvas.clear(Color(12, 12, 16, 255));
 
@@ -267,6 +289,14 @@ fn main() -> anyhow::Result<()> {
                         Color(120, 200, 255, 180)
                     );
                 }
+
+                canvas.fill_rect_f32(
+                    body.pos.x,
+                    body.pos.y,
+                    body.size.x,
+                    body.size.y,
+                    Color(120, 210, 255, 200),
+                );
 
                 if additive {
                     ps.draw_additive(&mut canvas);

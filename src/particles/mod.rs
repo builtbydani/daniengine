@@ -83,7 +83,9 @@ impl ParticleSystem {
         for _ in 0..config.count {
             if let Some(i) = self.alloc_slot_index() {
                 // Generate randomness BEFORE mut-borrowing the particle slot.
-                let dir = config.base_direction + self.rand_between(-config.spread_radians, config.spread_radians);
+                let dir = config.base_direction + self.rand_between(
+                    -config.spread_radians, config.spread_radians);
+
                 let spd = self.rand_between(config.speed_min, config.speed_max);
                 let life = self.rand_between(config.life_min, config.life_max);
                 let size = self.rand_between(config.size_min, config.size_max);
@@ -100,6 +102,53 @@ impl ParticleSystem {
                 };
             } else {
                 break;
+            }
+        }
+    }
+
+    pub fn collide_rect(&mut self, rect: [f32; 4], restitution: f32) {
+        let (rx, ry, rw, rh) = (rect[0], rect[1], rect[2], rect[3]);
+        let left   = rx;
+        let right  = rx + rw;
+        let top    = ry;
+        let bottom = ry + rh;
+
+        for p in &mut self.particles {
+            if !p.alive { continue; }
+
+            let half = p.size * 0.5;
+            let mut cx = p.pos[0] + half;
+            let mut cy = p.pos[1] + half;
+
+            if cx >= left && cx <= right && cy >= top && cy <= bottom {
+                // Distances to each side
+                let dl = cx - left;
+                let dr = right - cx;
+                let dpt = cy - top;
+                let db = bottom - cy;
+
+                // Which axis has shallowest penetration
+                let min_x = dl.min(dr);
+                let min_y = dpt.min(db);
+
+                if min_x < min_y {
+                    if dl < dr {
+                        cx = left - 0.001;
+                    } else {
+                        cx = right + 0.001;
+                    }
+                    p.vel[0] = -p.vel[0] * restitution;
+                } else {
+                    if dpt < db {
+                        cy = top - 0.001;
+                    } else {
+                        cy = bottom + 0.001;
+                    }
+                    p.vel[1] = -p.vel[1] * restitution;
+                }
+
+                p.pos[0] = cx - half;
+                p.pos[1] = cy - half;
             }
         }
     }
