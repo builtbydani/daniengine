@@ -30,6 +30,10 @@ fn main() -> anyhow::Result<()> {
     let mut mouse_down = false;
     let mut shift_down = false;
     let mut fountain = false;
+    let mut well_active = false;
+    let mut well_pos = Vec2::new(160.0, 90.0);
+    let mut well_radius: f32 = 70.0;
+    let mut well_strength: f32 = 1200.0;
 
     let mut last = Instant::now();
 
@@ -164,6 +168,43 @@ fn main() -> anyhow::Result<()> {
                         VirtualKeyCode::LShift | VirtualKeyCode::RShift => {
                             shift_down = pressed;
                         }
+                        VirtualKeyCode::G => {
+                            if pressed {
+                                well_active = !well_active;
+                                println!("Gravity well: {}", 
+                                    if well_active { "ON" } else { "OFF" })
+                            }
+                        }
+                        VirtualKeyCode::W => {
+                            if pressed {
+                                well_pos = mouse_pos;
+                                println!("Well moved to mouse");
+                            }
+                        }
+                        VirtualKeyCode::LBracket => {
+                            if pressed {
+                                well_radius = (well_radius - 5.0).max(10.0);
+                                println!("Well radius: {:.1}", well_radius);
+                            }
+                        }
+                        VirtualKeyCode::RBracket => {
+                            if pressed {
+                                well_radius += 5.0; 
+                                println!("Well radius: {:.1}", well_radius);    
+                            }
+                        }
+                        VirtualKeyCode::Minus => {
+                            if pressed {
+                                well_strength = (well_strength - 100.0).max(0.0);
+                                println!("Well strength: {:.0}", well_strength);
+                            }
+                        }
+                        VirtualKeyCode::Equals => {
+                            if pressed {
+                                well_strength += 100.0;
+                                println!("Well strength: {:.0}", well_strength);
+                            }
+                        }
                         _ => {}
                     }
                 }
@@ -206,17 +247,38 @@ fn main() -> anyhow::Result<()> {
                     ps.emit_burst([w as f32 * 0.5, h as f32 * 0.9], cfg);
                 }
 
+                if well_active {
+                    ps.apply_gravity_well(
+                        [well_pos.x, well_pos.y], 
+                        well_strength, well_radius, 
+                        dt);
+                }
+
                 // update + render
                 ps.update(dt);
 
                 canvas.clear(Color(12, 12, 16, 255));
+
+                if well_active {
+                    canvas.draw_circle_f32(
+                        well_pos.x,
+                        well_pos.y,
+                        well_radius,
+                        Color(120, 200, 255, 180)
+                    );
+                }
+
                 if additive {
                     ps.draw_additive(&mut canvas);
                 } else {
                     ps.draw(&mut canvas);
                 }
+
                 // tiny mouse dot
-                canvas.fill_rect_f32(mouse_pos.x - 2.0, mouse_pos.y - 2.0, 4.0, 4.0, Color(255, 255, 255, 160));
+                canvas.fill_rect_f32(
+                    mouse_pos.x - 2.0, 
+                    mouse_pos.y - 2.0, 4.0, 4.0, 
+                    Color(255, 255, 255, 160));
 
                 if let Err(e) = canvas.present() {
                     eprintln!("present error: {e}");

@@ -58,6 +58,27 @@ impl ParticleSystem {
         self.gravity = [gx, gy];
     }
 
+    pub fn apply_gravity_well(&mut self, center: [f32; 2], strength: f32, radius: f32, dt: f32) {
+        let r2 = radius * radius;
+        for p in &mut self.particles {
+            if !p.alive { continue; }
+            let dx = center[0] - p.pos[0];
+            let dy = center[1] - p.pos[1];
+            let d2 = dx*dx + dy*dy;
+            if d2 > r2 || d2 == 0.0 { continue; }
+
+            let falloff = 1.0 - (d2 / r2);
+
+            let inv_d = 1.0 / d2.sqrt().max(1e-3);
+            let nx = dx * inv_d;
+            let ny = dy * inv_d;
+
+            let a = strength * falloff;
+            p.vel[0] += nx * a * dt;
+            p.vel[1] += ny * a * dt;
+        }
+    }
+
     pub fn emit_burst(&mut self, pos: [f32; 2], config: EmitterConfig) {
         for _ in 0..config.count {
             if let Some(i) = self.alloc_slot_index() {
